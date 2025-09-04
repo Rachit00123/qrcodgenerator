@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vanity QR Code Generator</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+      min-height: 100vh;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+      animation: fadeInDown 1s ease;
+    }
+    .header h1 {
+      font-size: 32px;
+      color: #2c3e50;
+      margin-bottom: 10px;
+    }
+    .header p {
+      color: #555;
+      font-size: 16px;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .container {
+      background: #fff;
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      max-width: 500px;
+      width: 100%;
+      margin-bottom: 20px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      animation: fadeIn 1s ease;
+    }
+    .container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    h2 {
+      margin-bottom: 20px;
+      text-align: center;
+      color: #2c3e50;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    input[type=text], input[type=file] {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0 15px;
+      font-size: 15px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      outline: none;
+      transition: border 0.3s, box-shadow 0.3s;
+    }
+    input[type=text]:focus, input[type=file]:focus {
+      border: 1px solid #007BFF;
+      box-shadow: 0 0 6px rgba(0, 123, 255, 0.5);
+    }
+    label {
+      font-weight: 500;
+      margin-bottom: 5px;
+      display: block;
+      color: #444;
+    }
+    .color-picker {
+      display: flex;
+      justify-content: space-between;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .color-picker div {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+    input[type=color] {
+      height: 50px;
+      width: 100%;
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      padding: 0;
+      transition: transform 0.2s;
+    }
+    input[type=color]:hover {
+      transform: scale(1.05);
+    }
+    button {
+      width: 100%;
+      background: linear-gradient(135deg, #007BFF, #00c6ff);
+      color: #fff;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      transition: background 0.3s, transform 0.2s;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #0056b3, #0099cc);
+      transform: scale(1.02);
+    }
+    canvas {
+      margin: 20px auto;
+      display: block;
+      max-width: 100%;
+      border: 2px solid #eee;
+      border-radius: 12px;
+      padding: 10px;
+      background: #fafafa;
+      transition: box-shadow 0.3s;
+    }
+    canvas:hover {
+      box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    }
+    .download-btns {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .download-btns button {
+      flex: 1;
+      background: linear-gradient(135deg, #28a745, #5dd39e);
+    }
+    .download-btns button:hover {
+      background: linear-gradient(135deg, #1e7e34, #45c37d);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>QR Code Generator</h1>
+    <p>Create customized QR codes with colors and logos</p>
+  </div>
+
+  <div class="container">
+    <h2>✨ Vanity QR Code Generator ✨</h2>
+    <label for="qrText">Enter Text or URL:</label>
+    <input type="text" id="qrText" placeholder="https://example.com">
+
+    <div class="color-picker">
+      <div>
+        <label for="fgColor">Foreground Color:</label>
+        <input type="color" id="fgColor" value="#000000">
+      </div>
+      <div>
+        <label for="bgColor">Background Color:</label>
+        <input type="color" id="bgColor" value="#ffffff">
+      </div>
+    </div>
+
+    <label for="logoUpload">Upload Center Logo (Optional):</label>
+    <input type="file" id="logoUpload" accept="image/*">
+
+    <button onclick="generateQR()">Generate QR Code</button>
+
+    <canvas id="designerQR"></canvas>
+    <div class="download-btns">
+      <button onclick="downloadQR('designerQR','png')">Download PNG</button>
+      <button onclick="downloadQR('designerQR','svg')">Download SVG</button>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+    async function generateQR() {
+      const text = document.getElementById("qrText").value.trim();
+      const fgColor = document.getElementById("fgColor").value;
+      const bgColor = document.getElementById("bgColor").value;
+      const designerCanvas = document.getElementById("designerQR");
+      const ctx = designerCanvas.getContext("2d");
+
+      if (!text) {
+        alert("Please enter text or URL");
+        return;
+      }
+
+      ctx.clearRect(0, 0, designerCanvas.width, designerCanvas.height);
+
+      await QRCode.toCanvas(designerCanvas, text, {
+        width: 300,
+        color: {
+          dark: fgColor,
+          light: bgColor
+        }
+      });
+
+      const file = document.getElementById("logoUpload").files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const img = new Image();
+          img.onload = function () {
+            const logoSize = designerCanvas.width * 0.2;
+            const x = (designerCanvas.width - logoSize) / 2;
+            const y = (designerCanvas.height - logoSize) / 2;
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(x, y, logoSize, logoSize);
+            ctx.drawImage(img, x, y, logoSize, logoSize);
+          };
+          img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function downloadQR(canvasId, type) {
+      const canvas = document.getElementById(canvasId);
+      if (type === 'png') {
+        const link = document.createElement('a');
+        link.download = canvasId + '.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      } else if (type === 'svg') {
+        QRCode.toString(document.getElementById("qrText").value, {
+          type: 'svg',
+          color: { dark: document.getElementById("fgColor").value, light: document.getElementById("bgColor").value }
+        }, function (err, string) {
+          if (!err) {
+            const blob = new Blob([string], { type: 'image/svg+xml' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = canvasId + '.svg';
+            link.click();
+          }
+        });
+      }
+    }
+  </script>
+</body>
+</html>
